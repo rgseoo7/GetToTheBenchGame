@@ -15,7 +15,7 @@ PROGNAME = App
 # program. However, feel free to comment the first line out and define the object files
 # yourself. For example if you have main.c and myLib.c then in the following
 # line you would put main.o and myLib.o.
-OFILES = gba.o font.o main.o images/margotrobbie.o images/startScreen.o images/loseScreen.o images/endScreen.o images/blackbox.o images/squat.o images/gigachad.o images/bench.o images/batman.o
+OFILES = gba.o font.o main.o images/startScreen.o images/loseScreen.o images/endScreen.o images/bench.o images/batman.o
 # OFILES = gba.o font.o main.o images/garbage.o
 
 ################################################################################

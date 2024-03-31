@@ -23,33 +23,33 @@
 * };
 *
 */
-#define SCORE_COL 180
-#define SCORE_ROW 10
+#define N_CANDIES (2)
+#define CHAR_HEIGHT (10)
+#define CHAR_WIDTH (10)
+#define CANDY_HEIGHT (10)
+#define CANDY_WIDTH (10)
+// TODO: Create any necessary structs
 
-void delay(int n);
-
-struct obstacles {
-    int row;
-    int col;
-    int width;
-    int height;
-    int type;
-};
-
-struct batman {
-    int row;
-    int col;
-    int width;
-    int height;
-    int uvel;
-    int hvel;
+struct batman1 {
+    int x;
+    int y;
 };
 
 struct bench {
-    int row;
-    int col;
-    int width;
-    int height;
+    int x;
+    int y;
+    int dx;
+    int dy;
 };
+
+struct state {
+    struct batman1 bat;
+    int ncandies;
+    struct bench candies_display[N_CANDIES];
+};
+
+struct state curr, prev;
+struct bench *cc, *oc;
+
 
 #endif

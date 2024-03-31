@@ -36,7 +36,7 @@ int randint(int min, int max) { return (qran() * (max - min) >> 15) + min; }
 */
 void setPixel(int row, int col, u16 color) {
   // TODO: IMPLEMENT
-  videoBuffer[OFFSET(row,col, 240)] = color;
+  *(videoBuffer + OFFSET(row, col, WIDTH)) = color;
 }
 
 /*
@@ -46,11 +46,11 @@ void setPixel(int row, int col, u16 color) {
 */
 void drawRectDMA(int row, int col, int width, int height, volatile u16 color) {
   // TODO: IMPLEMENT
-  for (int i = 0; i < height; i++) {
-    DMA[3].src = &color;
-    DMA[3].dst = &videoBuffer[OFFSET(row + 1, col, 240)];
-    DMA[3].cnt = width | DMA_SOURCE_FIXED | DMA_DESTINATION_INCREMENT | DMA_ON;
-  }
+  for(int i = 0; i < height; i++) { //each row
+      DMA[3].src = &color; //source is fixed. always the same color : DMA_SOURCE_FIXED
+      DMA[3].dst = &videoBuffer[OFFSET(row, col+i, WIDTH)]; //where  we're gonna start in dest.
+      DMA[3].cnt = width | DMA_ON | DMA_SOURCE_FIXED | DMA_DESTINATION_INCREMENT; //width: how many times, DMA
+    }
 }
 
 /*
@@ -59,9 +59,9 @@ void drawRectDMA(int row, int col, int width, int height, volatile u16 color) {
   This function can be completed using a single DMA call.
 */
 void drawFullScreenImageDMA(const u16 *image) {
-  DMA[3].src = &image[OFFSET(0, 0, 240)];
-  DMA[3].dst = &videoBuffer[OFFSET(0, 0, 240)];
-  DMA[3].cnt = (240 * 160) | DMA_DESTINATION_INCREMENT | DMA_ON;
+  DMA[3].src = image; //start address
+  DMA[3].dst = videoBuffer;
+  DMA[3].cnt = WIDTH * HEIGHT | DMA_ON | DMA_SOURCE_INCREMENT | DMA_DESTINATION_INCREMENT;
 }
 
 /*
@@ -73,11 +73,11 @@ void drawFullScreenImageDMA(const u16 *image) {
 */
 void drawImageDMA(int row, int col, int width, int height, const u16 *image) {
   // TODO: IMPLEMENT
-  for (int i = 0; i < height; i++) {
-		DMA[DMA_CHANNEL_3].src = image + (i * width);
-		DMA[DMA_CHANNEL_3].dst = videoBuffer + ((row + i) * 240) + col;
-		DMA[DMA_CHANNEL_3].cnt = width | DMA_ON;
-	}
+  for(int i = 0; i < height; i++) {
+      DMA[3].src = &image[OFFSET(i, 0, width)];
+      DMA[3].dst = &videoBuffer[OFFSET(row + i, col, WIDTH)];
+      DMA[3].cnt = width | DMA_ON | DMA_SOURCE_INCREMENT | DMA_DESTINATION_INCREMENT;
+    }
 }
 
 /*

@@ -5,14 +5,10 @@
 
 #include "gba.h"
 #include "images/batman.h"
-#include "images/margotrobbie.h"
 #include "images/bench.h"
-#include "images/gigachad.h"
 #include "images/loseScreen.h"
 #include "images/startScreen.h"
 #include "images/endScreen.h"
-#include "images/squat.h"
-#include "images/blackbox.h"
 
 
 /* TODO: */
@@ -31,221 +27,214 @@ enum gba_state {
   LOSE,
 };
 
-void delay (int n) {
-  volatile int x = 0;
-  for (int i = 0; i < n * 8000; i++) {
-    x++;
-  }
-}
+
 
 int main(void) {
   /* TODO: */
   // Manipulate REG_DISPCNT here to set Mode 3. //
-  REG_DISPCNT = MODE3 | BG2_ENABLE;
-
-  struct obstacles obstacles[15] = {
-    {30, 110, 0, 0, 1},
-    {60, 130, 0, 0, 3},
-    {130, 200, 0, 0, 2},
-    {40, 150, 0, 0, 3},
-    {90, 80, 0, 0, 1},
-    {110, 180, 0, 0, 2},
-    {10, 80, 0, 0, 3},
-    {60, 40, 0, 0, 1},
-    {10, 80, 0, 0, 1},
-    {50, 180, 0, 0, 2},
-    {80, 40, 0, 0, 3},
-    {120, 100, 0, 0, 1}, 
-    {80, 200, 0, 0, 2},
-    {80, 150 , 0, 0, 3},
-    {120, 170, 0, 0, 1}
-  };
-  int object = sizeof(obstacles) / sizeof(obstacles[0]);
-  for (int i = 0; i < object; i++) {
-    if (obstacles[i].type == 1) {
-      obstacles[i].height = GIGACHAD_HEIGHT;
-      obstacles[i].width = GIGACHAD_WIDTH;
-    } else if (obstacles[i].type == 2) {
-      obstacles[i].height = SQUAT_HEIGHT;
-      obstacles[i].width = SQUAT_WIDTH;
-    } else if (obstacles[i].type == 3) {
-      obstacles[i].height = MARGOTROBBIE_HEIGHT;
-      obstacles[i].width = MARGOTROBBIE_WIDTH;
-    }
-  }
-  struct sprite bat = {40, 100, BATMAN_WIDTH, BATMAN_HEIGHT, 2, 2};
-  struct batlor bench = {70, 220, BENCH_WIDTH, BENCH_HEIGHT};
-
-
+  REG_DISPCNT =  MODE3 | BG2_ENABLE;
   // Save current and previous state of button input.
   u32 previousButtons = BUTTONS;
   u32 currentButtons = BUTTONS;
 
+
   // Load initial application state
   enum gba_state state = START;
-  unsigned int count = 0;
+  enum gba_state prevState = START;
+
+   struct batman1 bat;
+   UNUSED(bat);
+   struct bench candies_display[N_CANDIES];
+   UNUSED(candies_display);
+
+    //initialize bat x,y position
+
+    struct state curr, prev;
+    struct bench *cc, *oc;
+    UNUSED(curr);
+    UNUSED(prev);
+    UNUSED(cc);
+    UNUSED(oc);
+
+    curr.bat.x = HEIGHT/2;
+    curr.bat.y = WIDTH/2;
+    prev.bat.x = HEIGHT/2;
+    prev.bat.y = WIDTH/2;
+
+   int livesLeft = 1;
+   int candiesEaten = 0;
+   prev = curr;
 
   while (1) {
     currentButtons = BUTTONS; // Load the current state of the buttons
-
+    prev = curr;
+    waitForVBlank();
     /* TODO: */
     // Manipulate the state machine below as needed //
     // NOTE: Call waitForVBlank() before you draw
-
     switch (state) {
-      case START:
-       bat.row = 80;
-        bat.col = 10;
-        bat.height = BATMAN_HEIGHT;
-        bat.width = BATMAN_WIDTH;
-        bat.uvel = 2;
-        bat.hvel = 2;
-
+      case START: //start, press enter to begin
         waitForVBlank();
-        if (count == 0) {
-          drawFullScreenImageDMA(startScreen);
-        }
-        drawCenteredString(120, 120, 0, 0, "GO GET A BENCH QUICK", 0xFFFF);
-        drawCenteredString(140, 120, 0, 0, "(Press START to continue)", 0xFFFF);
-        if (KEY_DOWN(BUTTON_START, currentButtons)) {
-          state = PLAY;
-          vBlankCounter = 0;
-          count = 0;
-          previousButtons = BUTTONS;
-          break;
-        }
-        //STATE =?
-        previousButtons = BUTTONS;
-        count++;
+        drawFullScreenImageDMA(startScreen);
+
+            if (KEY_JUST_PRESSED(BUTTON_START, currentButtons, previousButtons)) {
+                prevState = START;
+                state = PLAY;
+                    for (int i = 0; i < N_CANDIES; i++) {
+                        cc = &candies_display[i];
+                        cc->x = randint(0, WIDTH + 160 - CANDY_WIDTH) % 160;
+                        cc->y = randint(40, HEIGHT - CANDY_HEIGHT) % 240;
+                    }
+
+                 curr.bat.x = WIDTH/2;
+                 curr.bat.y = HEIGHT/2;
+               int livesLeft = 1;
+               int candiesEaten = 0;
+                 UNUSED(livesLeft);
+                 UNUSED(candiesEaten);
+                 UNUSED(prevState);
+            }
+
         break;
       case PLAY:
-        if (KEY_DOWN(BUTTON_SELECT, currentButtons)) {
-          state = START;
-          count = 0;
-          previousButtons = BUTTONS;
-          break;
-        }
-        int prevrow = bat.row;
-        int prevcol = bat.col;
-        if (KEY_DOWN(BUTTON_UP, currentButtons)) {
-          bat.row -= bat.uvel;
-          if (bat.row < 0) {
-            bat.row = 0;
+      // reset game
+          if (KEY_JUST_PRESSED(BUTTON_SELECT, currentButtons, previousButtons)) {
+            livesLeft = 1;
+            candiesEaten = 0;
+            state = START;
           }
-        }
-        if (KEY_DOWN(BUTTON_DOWN, currentButtons)) {
-          bat.row += bat.uvel;
-          if (bat.row > HEIGHT - bat.height) {
-            bat.row = HEIGHT - bat.height;
-          }
-        }
-        if (KEY_DOWN(BUTTON_LEFT, currentButtons)) {
-          bat.col -= bat.hvel;
-          if (bat.col < 0) {
-            bat.col = 0;
-          }
-        }
-        if (KEY_DOWN(BUTTON_RIGHT, currentButtons)) {
-          bat.col += bat.hvel;
-          if (bat.col > WIDTH - bat.width) {
-            bat.col = WIDTH - bat.width;
-          }
-        }
-        if ((SCORE_COL <= bat.col + bat.width && SCORE_COL + 60 - 1 >= bat.col) && (SCORE_ROW <= bat.row + bat.height && SCORE_ROW + 10 - 1 >= bat.row)) {
-          bat.col = prevcol;
-          bat.row = prevrow;
-        }
-        int hit = 0;
-        for (int i = 0; i < object; i++) {
-          if ((obstacles[i].col + 1 <= bat.col + bat.width && obstacles[i].col + obstacles[i].width - 1 >= bat.col)
-          && (obstacles[i].row + 1 <= bat.row + bat.height && obstacles[i].row + obstacles[i].height - 1 >= bat.row)) {
-            waitForVBlank();
-            delay(10);
-            state = LOSE;
-            count = 0;
-            previousButtons = BUTTONS;
-            hit = 1;
-            break;
-          }
-        }
-        if ((bench.col + 2 <= bat.col + bat.width && bench.col + bench.width - 2 >= bat.col)
-          && (bench.row <= bat.row + bat.height && bench.row + bench.height - 2 >= bat.row)) {
-            delay(10);
-            state = WIN;
-            count = 0;
-            previousButtons = BUTTONS;
-            hit = 1;
-            break;
-          }
-        if (hit) {
-          break;
-        }
-        char buffer[50];
-        int time = vBlankCounter / 6;
-        sprintf(buffer, "Score: %d", time);
-        waitForVBlank();
-        if (count == 0) {
-          fillScreenDMA(BLACK);
-          for (int i = 0; i < object; i++) {
-            if (obstacles[i].type == 1) {
-              drawImageDMA(obstacles[i].row, obstacles[i].col, obstacles[i].width, obstacles[i].height, gigachad);
-            } else if (obstacles[i].type == 2) {
-              drawImageDMA(obstacles[i].row, obstacles[i].col, obstacles[i].width, obstacles[i].height, squat);
-            } else if (obstacles[i].type == 3) {
-              drawImageDMA(obstacles[i].row, obstacles[i].col, obstacles[i].width, obstacles[i].height, margotrobbie);
+          //update separately
+
+            if (curr.bat.x <= 240 - CHAR_HEIGHT) {
+                if (KEY_JUST_PRESSED(BUTTON_RIGHT, currentButtons, previousButtons)) {
+                    prev.bat.y = curr.bat.y;
+                    prev.bat.x = curr.bat.x;
+                    curr.bat.x += 10;
+                }
             }
-          }
-          drawImageDMA(bench.row, bench.col, bench.width, bench.height, bench);
-        } else {
-          undrawImageDMA(prevrow, prevcol, bat.width, bat.height, blackbox);
-          drawImageDMA(bat.row, bat.col, bat.width, bat.height, bat);
-          undrawImageDMA(10, 180, 60, 10, blackbox);
-          drawString(10, 180, buffer, 0xFFFF);
-        }
-        // state = ?
-        count++;
-        previousButtons = BUTTONS;
+            if (curr.bat.x >= 0) {
+                if (KEY_JUST_PRESSED(BUTTON_LEFT, currentButtons, previousButtons)) {
+                    prev.bat.y = curr.bat.y;
+                    prev.bat.x = curr.bat.x;
+                    curr.bat.x -= 10;
+                }
+            }
+            if (curr.bat.y >= 0) {
+                if (KEY_JUST_PRESSED(BUTTON_UP, currentButtons, previousButtons)) {
+                    prev.bat.x = curr.bat.x;
+                    prev.bat.y = curr.bat.y;
+                    curr.bat.y -= 10;
+                }
+            }
+            if (curr.bat.y <= 160 - CHAR_WIDTH) {
+                if (KEY_JUST_PRESSED(BUTTON_DOWN, currentButtons, previousButtons)) {
+                    prev.bat.x = curr.bat.x;
+                    prev.bat.y = curr.bat.y;
+                    curr.bat.y += 10;
+                }
+            }
+
+            for (int i = 0; i < N_CANDIES; i++) {
+            // 1) bottom candy < bottom bat < top candy
+            // OR
+            // 2) bottom candy < top bat < top candy
+            //
+            // AND
+            //
+            // 3) left candy < right bat < right candy
+            // Or
+            // 4) left candy < left bat < right candy
+
+
+                // bat.x = x coordinate of the screen
+                // bat.y = y coordinate of the screen
+
+                int char_bottom = (curr.bat.y + 10);
+                int char_top = curr.bat.y;
+                int char_left = curr.bat.x;
+                int char_right = (curr.bat.x + 10);
+
+                int prev_char_bottom = (prev.bat.y + 10);
+                int prev_char_top = prev.bat.y;
+                int prev_char_left = prev.bat.x;
+                int prev_char_right = (prev.bat.x + 10);
+
+                int bench_bottom = (candies_display[i].y + 10);
+                int bench_top = candies_display[i].y;
+                int bench_left = candies_display[i].x;
+                int bench_right = (candies_display[i].x + 10);
+
+
+                if (
+                    ( ((char_bottom <= bench_bottom) && (char_bottom >= bench_top)) || ((char_top <= bench_bottom) && (char_top >= bench_top)) )
+                     &&
+                    ( ((char_left >= bench_left) && (char_left <= bench_right)) ||  ((char_right >= bench_left) && ((char_right <= bench_right))) )
+                ) {
+                   if (
+                       !(
+                            ( ((prev_char_bottom <= bench_bottom) && (prev_char_bottom >= bench_top)) || ((prev_char_top <= bench_bottom) && (prev_char_top >= bench_top)) )
+                             &&
+                            ( ((prev_char_left >= bench_left) && (prev_char_left <= bench_right)) || ((prev_char_right >= bench_left) && (prev_char_right <= bench_right)))
+                        )
+                       ) {
+                        candiesEaten += 1;
+                        }
+                    }
+               }
+
+
+
+            if (curr.bat.x == WIDTH - CHAR_WIDTH || curr.bat.y == HEIGHT - CHAR_HEIGHT || curr.bat.x == 0 || curr.bat.y == 0) {
+                livesLeft -= 1;
+            }
+
+            if (candiesEaten >= 2) {
+                state = WIN;
+            }
+            if (livesLeft == 0) {
+                state = LOSE;
+            }
+
+            char buffer_candies[30];
+            snprintf(buffer_candies, 30, "Eaten Candies: %d", candiesEaten);
+
+
+            waitForVBlank();
+            fillScreenDMA(BLACK);
+            drawString(140, 30, buffer_candies, WHITE);
+
+           for (int i = 0; i < N_CANDIES;  i++) {
+            drawImageDMA(candies_display[i].y, candies_display[i].x, CANDY_WIDTH, CANDY_HEIGHT, bench);
+           }
+           drawImageDMA(curr.bat.y, curr.bat.x, CHAR_WIDTH, CHAR_HEIGHT, batman);
+
+
+
         break;
       case WIN:
-        if (KEY_DOWN(BUTTON_SELECT, currentButtons)) {
-            state = START;
-            count = 0;
-            previousButtons = BUTTONS;
-            break;
-        }
         waitForVBlank();
-        if (count == 0) {
-          drawFullScreenImageDMA(endScreen);
-        } else {
-          sprintf(buffer, "Final Score: %d", time);
-          drawString(40, 20, "You got to the bench", 0xFFFF);
-          drawString(60, 130, buffer, 0xFFFF);
-        }
-        // state = ?
-        count++;
+        drawFullScreenImageDMA(endScreen);
+          if (KEY_JUST_PRESSED(BUTTON_SELECT, currentButtons, previousButtons)) {
+            livesLeft = 1;
+            candiesEaten = 0;
+            state = START;
+          }
+
         break;
       case LOSE:
-      if (KEY_DOWN(BUTTON_SELECT, currentButtons)) {
-          state = START;
-          count = 0;
-          previousButtons = BUTTONS;
-          break;
-      }
-      waitForVBlank();
-      if (count == 0) {
+        waitForVBlank();
         drawFullScreenImageDMA(loseScreen);
-      } else {
-        drawCenteredString(120, 120, 0, 0, "They took the bench :/", 0xFFFF);
-      }
-      // state = ?
-      count++;
-      break; 
+          if (KEY_JUST_PRESSED(BUTTON_SELECT, currentButtons, previousButtons)) {
+            livesLeft = 1;
+            candiesEaten = 0;
+            state = START;
+          }
+
+        break;
+
+}
+previousButtons = currentButtons;
+
     }
 
-    previousButtons = currentButtons; // Store the current state of the buttons
   }
-
-  UNUSED(previousButtons); // You can remove this once previousButtons is used
-
-  return 0;
-}
